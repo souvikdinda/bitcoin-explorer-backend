@@ -1,0 +1,17 @@
+[package]
+name = "bitcoin-explorer"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+tokio = { version = "1.40.0", features = ["full"] }
+sqlx = { version = "0.8.2", features = ["postgres", "runtime-tokio-native-tls"] }
+rocket = { version = "0.5.1", features = ["json"] }
+rocket_cors = "0.6.0"
+bitcoincore-rpc = "0.19.0"
+dotenv = "0.15.0"
+reqwest = { version = "0.12.8", features = ["json"] }
+serde = { version = "1.0.210", features = ["derive"] }
+log = "0.4.22"
+rust_decimal = { version = "1.36.0", features = ["serde"] }
+bitcoin = "0.27"
