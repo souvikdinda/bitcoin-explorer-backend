@@ -1,5 +1,5 @@
 use rocket::{get, routes, State};
-use sqlx::{Pool, Postgres, Row}; // Import Row trait
+use sqlx::{Pool, Postgres, Row};
 use serde::Serialize;
 use rocket::serde::json::Json;
 
@@ -12,7 +12,6 @@ struct BlockMetrics {
     total_sent_today: f64,
     network_hashrate: f64,
     blockchain_size: f64,
-    // unique_addresses_24hr: i32,
 }
 
 #[get("/block_metrics")]
@@ -81,14 +80,6 @@ async fn get_block_metrics(pool: &State<Pool<Postgres>>) -> Option<Json<BlockMet
                 }
             };
 
-            // let unique_addresses_24hr: i32 = match record.try_get("unique_addresses_24hr") {
-            //     Ok(value) => value,
-            //     Err(e) => {
-            //         eprintln!("Error extracting unique_addresses_24hr: {:?}", e);
-            //         return None;
-            //     }
-            // };
-
             Some(Json(BlockMetrics {
                 block_height,
                 block_hash,
@@ -97,7 +88,6 @@ async fn get_block_metrics(pool: &State<Pool<Postgres>>) -> Option<Json<BlockMet
                 total_sent_today,
                 network_hashrate,
                 blockchain_size,
-                // unique_addresses_24hr,
             }))
         },
         Err(e) => {

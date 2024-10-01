@@ -30,16 +30,6 @@ async fn create_tables(pool: &Pool<Postgres>) -> Result<(), Error> {
     };
 
     match sqlx::query(
-        // r#"
-        // CREATE TABLE IF NOT EXISTS metrics (
-        //     id SERIAL PRIMARY KEY,
-        //     block_height INTEGER NOT NULL,
-        //     block_hash TEXT,
-        //     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        //     transaction_count INTEGER,
-        //     market_price FLOAT8
-        // );
-        // "#
         r#"
         CREATE TABLE IF NOT EXISTS metrics (
             id SERIAL PRIMARY KEY,
@@ -82,7 +72,6 @@ pub async fn insert_metrics(
     total_sent_today: f64,
     network_hashrate: f64,
     blockchain_size: f64,
-    // unique_addresses_24hr: i32
 ) -> Result<(), Error> {
     sqlx::query(
         "INSERT INTO metrics (block_height, block_hash, transaction_count, market_price, total_sent_today, network_hashrate, blockchain_size) VALUES ($1, $2, $3, $4, $5, $6, $7)"
@@ -94,7 +83,6 @@ pub async fn insert_metrics(
     .bind(total_sent_today)
     .bind(network_hashrate)
     .bind(blockchain_size)
-    // .bind(unique_addresses_24hr)
     .execute(pool)
     .await?;
     Ok(())
