@@ -1,13 +1,55 @@
 use sqlx::{migrate::MigrateDatabase, Error, Pool, Postgres};
+use tokio::time::{sleep, Duration};
+
+// pub async fn init_db(database_url: &str) -> Result<Pool<Postgres>, Error> {
+//      if !Postgres::database_exists(database_url).await.unwrap_or(false) {
+//         Postgres::create_database(database_url).await?;
+//     } else {
+//         println!("Database already exists");
+//     }
+//     let pool = Pool::<Postgres>::connect(database_url).await?;
+
+//     create_tables(&pool).await?;
+
+//     Ok(pool)
+// }
 
 pub async fn init_db(database_url: &str) -> Result<Pool<Postgres>, Error> {
-     if !Postgres::database_exists(database_url).await.unwrap_or(false) {
-        Postgres::create_database(database_url).await?;
-    } else {
-        println!("Database already exists");
-    }
-    let pool = Pool::<Postgres>::connect(database_url).await?;
+    let mut attempts = 0;
+    let max_attempts = 10; // Optional: max attempts before giving up
 
+    // First, attempt to connect to the database
+    let pool = loop {
+        match Pool::<Postgres>::connect(database_url).await {
+            Ok(pool) => {
+                println!("Connected to the database.");
+                break pool;
+            }
+            Err(e) => {
+                eprintln!("Failed to connect to database: {:?}", e);
+                attempts += 1;
+                if attempts >= max_attempts {
+                    eprintln!("Reached maximum attempts to connect to the database.");
+                    return Err(Error::Configuration("Unable to connect to the database after several attempts".into()));
+                }
+                let delay = Duration::from_secs(2_u64.pow(attempts)); // Exponential backoff
+                println!("Retrying in {:?} seconds...", delay.as_secs());
+                sleep(delay).await;
+            }
+        }
+    };
+
+    // Check if the database exists or needs to be created
+    if !Postgres::database_exists(database_url).await.unwrap_or(false) {
+        match Postgres::create_database(database_url).await {
+            Ok(_) => println!("Database created successfully."),
+            Err(e) => eprintln!("Failed to create database: {:?}", e),
+        }
+    } else {
+        println!("Database already exists.");
+    }
+
+    // Create tables after ensuring the connection
     create_tables(&pool).await?;
 
     Ok(pool)
