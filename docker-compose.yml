@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  backend:
+    image: souvikdinda/bitcoin-explorer-backend:latest
+    environment:
+      - DATABASE_URL=postgresql://postgres:123456@postgres/bitcoin_explorer
+      - BITCOIN_RPC_USER=souvikdinda
+      - BITCOIN_RPC_PASSWORD=123456
+      - BITCOIN_RPC_URL=http://bitcoin-core:18332
+    ports:
+      - "8000:8000"
+    depends_on:
+      - postgres
+      - bitcoin-core
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  frontend:
+    image: souvikdinda/bitcoin-explorer-frontend:latest
+    environment:
+      - REACT_APP_BACKEND_API_URL=http://localhost:8000
+      - PORT=3000
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 123456
+      POSTGRES_DB: bitcoin_explorer
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  bitcoin-core:
+    image: ruimarinho/bitcoin-core:latest
+    volumes:
+      - bitcoin_data:/home/bitcoin/.bitcoin
+    command:
+      - -printtoconsole
+      - -testnet=1
+      - -rpcallowip=0.0.0.0/0
+      - -rpcbind=0.0.0.0
+      - -rpcuser=souvikdinda
+      - -rpcpassword=123456
+    ports:
+      - "18332:18332"
+      - "18333:18333"
+    networks:
+      - app-network
+    restart: unless-stopped
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  bitcoin_data:
