@@ -37,7 +37,7 @@ jobs:
 
     - name: Copy Docker Compose file to EC2
       run: |
-        scp -o StrictHostKeyChecking=no docker-compose.yml ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/bitcoin-explorer/docker-compose.yml
+        scp -o StrictHostKeyChecking=no docker-compose.yml bitcoin.conf ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/bitcoin-explorer/
 
     - name: Deploy Docker Compose to EC2
       run: |
