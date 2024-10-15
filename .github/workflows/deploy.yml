@@ -44,5 +44,6 @@ jobs:
         ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
           cd /home/${{ secrets.SSH_USER }}/bitcoin-explorer &&
           docker-compose down &&
+          docker-compose pull &&
           docker-compose up -d --build
         "
