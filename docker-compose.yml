@@ -1,13 +1,12 @@
-version: '3.8'
-
 services:
   backend:
     image: souvikdinda/bitcoin-explorer-backend:latest
+    platform: linux/amd64
     environment:
       - DATABASE_URL=postgresql://postgres:123456@postgres/bitcoin_explorer
       - BITCOIN_RPC_USER=souvikdinda
       - BITCOIN_RPC_PASSWORD=123456
-      - BITCOIN_RPC_URL=http://bitcoin-core:18332
+      - BITCOIN_RPC_URL=http://bitcoin-core:8332
     ports:
       - "8000:8000"
     depends_on:
@@ -19,6 +18,7 @@ services:
 
   frontend:
     image: souvikdinda/bitcoin-explorer-frontend:latest
+    platform: linux/amd64
     environment:
       - REACT_APP_BACKEND_API_URL=http://localhost:8000
       - PORT=3000
@@ -48,16 +48,15 @@ services:
     image: ruimarinho/bitcoin-core:latest
     volumes:
       - bitcoin_data:/home/bitcoin/.bitcoin
+      - ./bitcoin.conf:/home/bitcoin/.bitcoin/bitcoin.conf
     command:
       - -printtoconsole
-      - -testnet=1
+      - -conf=/home/bitcoin/.bitcoin/bitcoin.conf
       - -rpcallowip=0.0.0.0/0
       - -rpcbind=0.0.0.0
-      - -rpcuser=souvikdinda
-      - -rpcpassword=123456
     ports:
-      - "18332:18332"
-      - "18333:18333"
+      - "8332:8332"
+      - "8333:8333"
     networks:
       - app-network
     restart: unless-stopped
