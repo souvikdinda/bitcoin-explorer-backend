@@ -1,104 +1,98 @@
 use rocket::{get, routes, State};
 use sqlx::{Pool, Postgres, Row};
-use serde::Serialize;
 use rocket::serde::json::Json;
+use crate::models::BlockMetrics;
 
-#[derive(Serialize)]
-struct BlockMetrics {
-    block_height: i32,
-    block_hash: String,
-    transaction_count: i32,
-    market_price: f64,
-    total_sent_today: f64,
-    network_hashrate: f64,
-    blockchain_size: f64,
-}
-
-#[get("/block_metrics")]
-async fn get_block_metrics(pool: &State<Pool<Postgres>>) -> Option<Json<BlockMetrics>> {
+#[get("/latest_block_metrics")]
+async fn latest_block_metrics(pool: &State<Pool<Postgres>>) -> Option<Json<BlockMetrics>> {
     let result = sqlx::query(
-        "SELECT block_height, block_hash, transaction_count, market_price, total_sent_today, network_hashrate, blockchain_size FROM metrics ORDER BY id DESC LIMIT 1"
+        "SELECT * FROM metrics ORDER BY block_height DESC LIMIT 1"
     )
     .fetch_one(pool.inner())
     .await;
 
-    match result {
-        Ok(record) => {
-            let block_height: i32 = match record.try_get("block_height") {
-                Ok(value) => value,
-                Err(e) => {
-                    eprintln!("Error extracting block_height: {:?}", e);
-                    return None;
-                }
-            };
+    if let Ok(row) = result {
+        Some(Json(BlockMetrics {
+            block_height: row.get("block_height"),
+            block_hash: row.get("block_hash"),
+            btc: row.get("btc"),
+            value: row.get("value"),
+            value_today: row.get("market_price"),
+            average_value: row.get("average_value"),
+            median_value: row.get("median_value"),
+            transaction_count: row.get("transaction_count"),
+            size: row.get("size"),
+            merkle_root: row.get("merkle_root"),
+            difficulty: row.get("difficulty"),
+            nonce: row.get("nonce"),
+            weight: row.get("weight"),
+            miner: row.get("miner"),
+            network_hashrate: row.get("network_hashrate"),
+            total_sent_today: row.get("total_sent_today"),
+            blockchain_size: row.get("blockchain_size"),
+        }))
+    } else {
+        None
+    }
+}
 
-            let block_hash: String = match record.try_get("block_hash") {
-                Ok(value) => value,
-                Err(e) => {
-                    eprintln!("Error extracting block_hash: {:?}", e);
-                    return None;
-                }
-            };
 
-            let transaction_count: i32 = match record.try_get("transaction_count") {
-                Ok(value) => value,
-                Err(e) => {
-                    eprintln!("Error extracting transaction_count: {:?}", e);
-                    return None;
-                }
-            };
+#[get("/latest_15_blocks")]
+async fn latest_15_blocks(pool: &State<Pool<Postgres>>) -> Json<Vec<i64>> {
+    let result = sqlx::query(
+        "SELECT height FROM block_height ORDER BY height DESC LIMIT 15"
+    )
+    .fetch_all(pool.inner())
+    .await;
 
-            let market_price: f64 = match record.try_get("market_price") {
-                Ok(value) => value,
-                Err(e) => {
-                    eprintln!("Error extracting market_price: {:?}", e);
-                    return None;
-                }
-            };
+    let mut blocks: Vec<i64> = Vec::new();
+    if let Ok(rows) = result {
+        for row in rows {
+            blocks.push(row.get("height"));
+        }
+    }
 
-            let total_sent_today: f64 = match record.try_get("total_sent_today") {
-                Ok(value) => value,
-                Err(e) => {
-                    eprintln!("Error extracting total_sent_today: {:?}", e);
-                    return None;
-                }
-            };
+    Json(blocks)
+}
 
-            let network_hashrate: f64 = match record.try_get("network_hashrate") {
-                Ok(value) => value,
-                Err(e) => {
-                    eprintln!("Error extracting network_hashrate: {:?}", e);
-                    return None;
-                }
-            };
+#[get("/block/<block_height>")]
+async fn block_by_height(pool: &State<Pool<Postgres>>, block_height: i64) -> Option<Json<BlockMetrics>> {
+    let result = sqlx::query(
+        "SELECT * FROM metrics WHERE block_height = $1"
+    )
+    .bind(block_height)
+    .fetch_one(pool.inner())
+    .await;
 
-            let blockchain_size: f64 = match record.try_get("blockchain_size") {
-                Ok(value) => value,
-                Err(e) => {
-                    eprintln!("Error extracting blockchain_size: {:?}", e);
-                    return None;
-                }
-            };
-
-            Some(Json(BlockMetrics {
-                block_height,
-                block_hash,
-                transaction_count,
-                market_price,
-                total_sent_today,
-                network_hashrate,
-                blockchain_size,
-            }))
-        },
-        Err(e) => {
-            eprintln!("Error fetching block metrics: {:?}", e);
-            None
-        },
+    if let Ok(row) = result {
+        Some(Json(BlockMetrics {
+            block_height: row.get("block_height"),
+            block_hash: row.get("block_hash"),
+            btc: row.get("btc"),
+            value: row.get("value"),
+            value_today: row.get("market_price"),
+            average_value: row.get("average_value"),
+            median_value: row.get("median_value"),
+            transaction_count: row.get("transaction_count"),
+            size: row.get("size"),
+            merkle_root: row.get("merkle_root"),
+            difficulty: row.get("difficulty"),
+            nonce: row.get("nonce"),
+            weight: row.get("weight"),
+            miner: row.get("miner"),
+            network_hashrate: row.get("network_hashrate"),
+            total_sent_today: row.get("total_sent_today"),
+            blockchain_size: row.get("blockchain_size"),
+        }))
+    } else {
+        None
     }
 }
 
 pub fn start_server(pool: Pool<Postgres>) -> rocket::Rocket<rocket::Build> {
     rocket::build()
         .manage(pool)
-        .mount("/", routes![get_block_metrics])
+        .mount("/", routes![latest_block_metrics])
+        .mount("/", routes![latest_15_blocks])
+        .mount("/", routes![block_by_height])
 }

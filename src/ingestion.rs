@@ -2,21 +2,10 @@ use tokio::time::{sleep, Duration};
 use sqlx::Pool;
 use sqlx::Postgres;
 use crate::bitcoin;
-use reqwest;
-use serde::Deserialize;
 use std::env;
 use std::path::PathBuf;
 use bitcoincore_rpc::RpcApi;
 
-#[derive(Deserialize)]
-struct PriceResponse {
-    bitcoin: PriceData,
-}
-
-#[derive(Deserialize)]
-struct PriceData {
-    usd: f64,
-}
 
 fn get_bitcoin_data_dir() -> PathBuf {
     let home_dir = env::var("HOME").unwrap_or_else(|_| ".".to_string());
@@ -31,15 +20,6 @@ fn get_bitcoin_data_dir() -> PathBuf {
     let data_dir = env::var("APPDATA").map(|appdata| format!("{}/Bitcoin", appdata)).unwrap_or_else(|_| ".".to_string());
 
     PathBuf::from(data_dir)
-}
-
-async fn fetch_market_price() -> Result<f64, reqwest::Error> {
-    let response = reqwest::get("https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=usd")
-        .await?
-        .json::<PriceResponse>()
-        .await?;
-    
-    Ok(response.bitcoin.usd)
 }
 
 fn fetch_total_sent_today(client: &bitcoincore_rpc::Client) -> f64 {
@@ -99,26 +79,46 @@ pub async fn start_ingestion(pool: Pool<Postgres>) {
                 eprintln!("Failed to insert block height: {:?}", e);
             }
 
-            if let Ok((block_hash, transaction_count)) = bitcoin::fetch_block_details(&client, block_height) {
-                if let Ok(market_price) = fetch_market_price().await {
-                    let total_sent_today = fetch_total_sent_today(&client);
-                    let network_hashrate = fetch_network_hashrate(&client);
-                    let blockchain_size = fetch_blockchain_size();
+            if let Ok(block_data) = bitcoin::fetch_block_details(&client, block_height).await {
+                let block_hash = &block_data.block_hash;
+                let transaction_count = block_data.transaction_count;
+                let size = block_data.size;
+                let weight = block_data.weight;
+                let difficulty = block_data.difficulty;
+                let merkle_root = &block_data.merkle_root;
+                let nonce = block_data.nonce;
+                
+                let total_sent_today = fetch_total_sent_today(&client);
+                let network_hashrate = fetch_network_hashrate(&client);
+                let blockchain_size = fetch_blockchain_size();
+                
+                let miner = &block_data.miner;
+                let btc = block_data.btc;
+                let value = block_data.value;
+                let average_value = block_data.average_value;
+                let median_value = block_data.median_value;
 
-                    if let Err(e) = crate::db::insert_metrics(
-                        &pool, 
-                        block_height, 
-                        &block_hash, 
-                        transaction_count, 
-                        market_price, 
-                        total_sent_today, 
-                        network_hashrate, 
-                        blockchain_size, 
-                    ).await {
-                        eprintln!("Failed to insert metrics: {:?}", e);
-                    }
-                } else {
-                    eprintln!("Failed to fetch market price");
+                if let Err(e) = crate::db::insert_metrics(
+                    &pool, 
+                    block_height, 
+                    block_hash, 
+                    transaction_count, 
+                    block_data.value_today, 
+                    total_sent_today, 
+                    network_hashrate, 
+                    blockchain_size, 
+                    size, 
+                    weight, 
+                    difficulty, 
+                    merkle_root, 
+                    nonce, 
+                    miner,
+                    btc,  
+                    value, 
+                    average_value, 
+                    median_value
+                ).await {
+                    eprintln!("Failed to insert metrics: {:?}", e);
                 }
             } else {
                 eprintln!("Failed to fetch block details for height: {}", block_height);
@@ -127,6 +127,6 @@ pub async fn start_ingestion(pool: Pool<Postgres>) {
             eprintln!("Failed to fetch block height");
         }
 
-        sleep(Duration::from_secs(30)).await;
+        sleep(Duration::from_secs(300)).await;
     }
 }
