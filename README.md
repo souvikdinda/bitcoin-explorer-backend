@@ -33,7 +33,7 @@
 **GET** https://{domainName}/block_metrics
 
 
-**Note:** _Update `.env` file before running the application_
+**Note:** _Update `.env` file before running the application._
 
 _This project is part of CSYE7500 course_
 _Author: Souvik Dinda_
