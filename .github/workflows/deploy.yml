@@ -35,6 +35,12 @@ jobs:
           echo '${{ secrets.DOCKER_TOKEN }}' | docker login -u '${{ secrets.DOCKER_USERNAME }}' --password-stdin
         "
 
+    - name: Change ownership of bitcoin conf file
+      run: |
+        ssh -o StrictHostKeyChecking=no ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} "
+          sudo chown ${{ secrets.SSH_USER }}:${{ secrets.SSH_USER }} /home/${{ secrets.SSH_USER }}/bitcoin-explorer/bitcoin.conf
+        "
+
     - name: Copy Docker Compose file to EC2
       run: |
         scp -o StrictHostKeyChecking=no docker-compose.yml bitcoin.conf ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/${{ secrets.SSH_USER }}/bitcoin-explorer/

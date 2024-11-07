@@ -26,9 +26,10 @@ async fn build_rocket() -> Rocket<Build> {
         .to_cors()
         .expect("Failed to create CORS fairing");
 
+    let port = env::var("PORT").unwrap_or("8001".to_string());
     let config = rocket::Config {
         address: "0.0.0.0".parse().expect("Invalid bind address"),
-        port: 8000,
+        port: port.parse().expect("Invalid port number"),
         ..rocket::Config::default()
     };
 

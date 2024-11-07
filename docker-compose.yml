@@ -8,7 +8,7 @@ services:
       - BITCOIN_RPC_PASSWORD=123456
       - BITCOIN_RPC_URL=http://bitcoin-core:8332
     ports:
-      - "8000:8000"
+      - "9000:8001"
     depends_on:
       - postgres
       - bitcoin-core
@@ -20,7 +20,7 @@ services:
     image: souvikdinda/bitcoin-explorer-frontend:latest
     platform: linux/amd64
     environment:
-      - REACT_APP_BACKEND_API_URL=http://18.209.182.123:8000
+      - REACT_APP_BACKEND_API_URL=https://bitcoin-explorer.souvikdinda.com:8001
       - PORT=3000
     ports:
       - "3000:80"
