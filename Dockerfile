@@ -20,6 +20,6 @@ COPY .env .env
 RUN chmod +x /app/bitcoin-explorer
 RUN ls -al /app
 
-EXPOSE 8001
+EXPOSE 8000 8001
 
 CMD ["/app/bitcoin-explorer"]
