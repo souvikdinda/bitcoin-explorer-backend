@@ -2,7 +2,7 @@
 
 ### Summary
 ------------------------------------------------------------------------
-**_This project contains RESTful Web Application that provides API endpoint to fetch Bitcoin block chain metrics and it also makes continuous automatic ingestion about block chain to the database_**
+**_This project contains RESTful Web Application that provides API endpoint to fetch Bitcoin block chain metrics and it also makes continuous automatic ingestion about block chain to the database._**
 
 ### To run this application:
 ------------------------------------------------------------------------
